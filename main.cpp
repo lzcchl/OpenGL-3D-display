@@ -1,10 +1,12 @@
-//ÅäÖÃ¹¤×÷£ºÎªÖ§³ÖÍ·ÎÄ¼şx64°æ<gl/glut.h>£¬ĞèÒªÔÚopenGL¹ÙÍøÏÂÔØfreeglutÑ¹Ëõ°ü£¬Í·ÎÄ¼ş·ÅÖ¸¶¨Î»ÖÃC:\Program Files (x86)\Windows Kits\8.1\Include\um\gl
-//			libÎÄ¼ş¼Ğ¸´ÖÆµ½µ±Ç°¹¤³ÌÄ¿Â¼£¬È»ºóÔÚ\Á´½ÓÆ÷\¸½¼ÓÒÀÀµÖĞ¼ÓÉÏ¡®.\lib¡¯£¬\Á´½ÓÆ÷\Êä³ö¼ÓÉÏ¡®freeglut.lib¡¯£¬×îºóÔÚx64\Debug\¸´ÖÆ¡®freeglut.dll¡¯
+ï»¿//é…ç½®å·¥ä½œï¼šä¸ºæ”¯æŒå¤´æ–‡ä»¶x64ç‰ˆ<gl/glut.h>ï¼Œéœ€è¦åœ¨openGLå®˜ç½‘ä¸‹è½½freeglutå‹ç¼©åŒ…ï¼Œå¤´æ–‡ä»¶æ”¾æŒ‡å®šä½ç½®C:\Program Files (x86)\Windows Kits\8.1\Include\um\gl
+//			libæ–‡ä»¶å¤¹å¤åˆ¶åˆ°å½“å‰å·¥ç¨‹ç›®å½•ï¼Œç„¶ååœ¨\é“¾æ¥å™¨\é™„åŠ ä¾èµ–ä¸­åŠ ä¸Šâ€˜.\libâ€™ï¼Œ\é“¾æ¥å™¨\è¾“å‡ºåŠ ä¸Šâ€˜freeglut.libâ€™ï¼Œæœ€ååœ¨x64\Debug\å¤åˆ¶â€˜freeglut.dllâ€™
 
 #include <gl/glut.h>
 #include <Windows.h>
 #include "Matrices.h"
 #include "Vectors.h"
+
+#define PI 3.1415926535898
 
 bool mouseLeftDown, mouseRightDown, mouseMiddleDown;
 float mouseX, mouseY;
@@ -13,14 +15,58 @@ const float CAMERA_DISTANCE = 5.0f;
 float cameraDistance;
 float times = 1;
 Matrix4 matrixView;
-const int  cx = GetSystemMetrics(SM_CXFULLSCREEN);	//ÕâÁ½ĞĞ»ñµÃÆÁÄ»´óĞ¡£¬ÓÃÀ´ÉèÖÃ´°¿Ú
-const int  cy = GetSystemMetrics(SM_CYFULLSCREEN);
-static int year = 0, day = 0;						//¾²Ì¬È«¾Ö±äÁ¿£¬Ö»ÔÚ´ËÎÄ¼şÄÚ¿ÉÓÃ
+Matrix4 matrixModel;
+Matrix4 matrixModelView;
+Matrix4 matrixProjection;
+const float DEG2RAD = 3.141593f / 180;
+int  cx = GetSystemMetrics(SM_CXFULLSCREEN);	//è¿™ä¸¤è¡Œè·å¾—å±å¹•å¤§å°ï¼Œç”¨æ¥è®¾ç½®çª—å£
+int  cy = GetSystemMetrics(SM_CYFULLSCREEN);
+static int year = 0, day = 0;						//é™æ€å…¨å±€å˜é‡ï¼Œåªåœ¨æ­¤æ–‡ä»¶å†…å¯ç”¨
 
 void init(void)
 {
-	glClearColor(0.0, 0.0, 0.0, 0.0);			//Çå³ıÑÕÉ«ÎªºÚÉ«
-	glShadeModel(GL_FLAT);						//×ÅÉ«Ä£Ê½£¬Ò»°ã·ÖÎªÁ½ÖÖ£¬GL_FLATÎªµ¥µ÷×ÅÉ«£¬¼´Í¼ĞÎµÄÑÕÉ«ÎªÄÚ²¿µÚÒ»£¨»ò×îºóÒ»£©¸ö¶¥µãµÄÑÕÉ«£¬GL_SMOOTHÎª½¥±ä×ÅÉ«£¬¹ËÃûË¼Òå¾Í²»ËµÁË
+	glClearColor(0.0, 0.0, 0.0, 0.0);			//æ¸…é™¤é¢œè‰²ä¸ºé»‘è‰²
+	glShadeModel(GL_FLAT);						//ç€è‰²æ¨¡å¼ï¼Œä¸€èˆ¬åˆ†ä¸ºä¸¤ç§ï¼ŒGL_FLATä¸ºå•è°ƒç€è‰²ï¼Œå³å›¾å½¢çš„é¢œè‰²ä¸ºå†…éƒ¨ç¬¬ä¸€ï¼ˆæˆ–æœ€åä¸€ï¼‰ä¸ªé¡¶ç‚¹çš„é¢œè‰²ï¼ŒGL_SMOOTHä¸ºæ¸å˜ç€è‰²ï¼Œé¡¾åæ€ä¹‰å°±ä¸è¯´äº†
+}
+
+
+void drawCircle(int n)							//ç”»ä¸€ä¸ªåœ†
+{
+	GLdouble angle;
+	glBegin(GL_TRIANGLE_FAN);
+	for (int i = 0; i < n; ++i)
+	{
+		angle = ((2 * i) * PI) / n;
+		glVertex2f(0.2*cos(angle), 0.2*sin(angle));
+	}
+	glEnd();
+}
+
+
+void drawPolygon(int n)							//ç”»ä¸€ä¸ªæŸ±ä½“
+{
+	GLdouble angle;
+	glBegin(GL_QUAD_STRIP);
+	for (int i = 0; i <= n; ++i)
+	{
+		angle = ((2 * i) * PI) / n;
+		glVertex2f(0.2*cos(angle), 0.2*sin(angle));
+		glVertex3f(0.2*cos(angle), 0.2*sin(angle),0.01f);
+	}
+	glEnd();
+	drawCircle(n);
+	//glTranslatef(0.1, 0.1, 0.05);
+	drawCircle(n);
+}
+
+
+void drawOneFloor(int n)						//ç”¨ç±»ä¼¼æ’å€¼çš„æ•ˆæœç”»ä¸€å±‚
+{
+	for (int i = 0; i < 5; ++i)
+	{
+		drawPolygon(n);
+		glTranslatef(0.005, 0.005, 0.01);
+	}
 }
 
 
@@ -35,89 +81,168 @@ void display(void)
     cameraAngleY = 0;
     glLoadMatrixf(matrixView.get());
 
-	glClear(GL_COLOR_BUFFER_BIT);				//ÓÃÇå³ıÑÕÉ«Çå³ı´°¿Ú
-	glColor3f(1.0, 1.0, 1.0);					//µ±Ç°»æÖÆÑÕÉ«Îª°×É«
-	glPushMatrix();								//¼Ç×¡µ±Ç°»æÍ¼Î»ÖÃ£¨µ±Ç°Î»ÖÃÊÇ×ø±êÖáÔ­µã£©
-	glutWireSphere(1.0, 20, 16);				//»­Ò»¸öÌ«Ñô£¬²ÎÊı·Ö±ğÎª°ë¾¶¡¢Î³ÏßÊı¡¢¾­ÏßÊı£¬µ±Ç°ÎïÌåÊÇÌ«Ñô
-	glRotatef((GLfloat)year, 0.0, 1.0, 0.0);	//µ±Ç°ÎïÌå£¨Ì«Ñô£©ÈÆ×Å£¨0.0£¬0.0£¬0.0£©->£¨0.0£¬1.0£¬0.0£©ÏòÁ¿Ğı×ª£¬´ËÀıÖĞ¼´ÈÆ×ÅYÖáĞı×ª£¬µ«³õÊ¼Ğı×ª½Ç¶È(GLfloat)yearÎª0£¬»æÖÆÎ»ÖÃÎ´¸Ä±ä
-	glTranslatef(2.0, 0.0, 0.0);				//»æÍ¼Î»ÖÃÏòXÖáÕı·½ÏòÒÆÁ½¸ö³¤¶È£¬XÖáÕı·½ÏòÊÇÆÁÄ»µÄÓÒ·½£¬YÖáµÄÕı·½ÏòÊÇÆÁÄ»µÄÉÏ·½£¬´ËÊ±»æÖÆÎ»ÖÃ¸Ä±ä
-	glRotatef((GLfloat)day, 0.0, 1.0, 0.0);		//½âÊÍÍ¬ÉÏ
-	glutWireSphere(0.2, 10, 8);					//»­Ò»¸öĞ¡ĞĞĞÇ£¬²ÎÊıÍ¬ÉÏ£¬×´Ì¬»úÖĞµ±Ç°ÎïÌåÎªĞ¡ĞĞĞÇ
+
+	//æ¨¡æ‹Ÿå¤šå±‚çš„ç¥ç»å…ƒ
+	glPushMatrix();
+	for (int i = 12; i < 32; ++i)
+	{
+		drawOneFloor(12);
+		//drawOneFloor(i);
+	}
+	glPopMatrix();
 
 
-	glTranslatef(2.0, 0.0, 0.0);				//Õâ¼¸ĞĞÊÇÎÒĞÂÔöµÄ£¬ÓÃÀ´ÊÔÑéĞı×ª
-	glRotatef((GLfloat)day, 0.0, 1.0, 0.0);		//Èç¹ûÕâ¸ö¼ÓÒ»ĞĞ£¬ÄÇÃ´day¸Ä±ä£¬ĞÂÔöÇòÌå¹«×ªµÄÍ¬Ê±»¹»á×Ô×ª£¬Ö»ÊÇÈâÑÛÄÑ¿´³öÓĞ×Ô×ª
+	//glClear(GL_COLOR_BUFFER_BIT);				//ç”¨æ¸…é™¤é¢œè‰²æ¸…é™¤çª—å£
+	glColor3f(1.0, 1.0, 1.0);					//å½“å‰ç»˜åˆ¶é¢œè‰²ä¸ºç™½è‰²
+	glPushMatrix();								//è®°ä½å½“å‰ç»˜å›¾ä½ç½®ï¼ˆå½“å‰ä½ç½®æ˜¯åæ ‡è½´åŸç‚¹ï¼‰
+
+    //glutWireTeapot(0.6f);						//è¿™ä¸ªä»£ç ç›´æ¥ç»™æˆ‘ç”Ÿæˆäº†ä¸€ä¸ªèŒ¶å£¶
+	//glutWireSphere(1.0, 20, 16);				//ç”»ä¸€ä¸ªå¤ªé˜³ï¼Œå‚æ•°åˆ†åˆ«ä¸ºåŠå¾„ã€çº¬çº¿æ•°ã€ç»çº¿æ•°ï¼Œå½“å‰ç‰©ä½“æ˜¯å¤ªé˜³
+	glRotatef((GLfloat)year, 0.0, 1.0, 0.0);	//å½“å‰ç‰©ä½“ï¼ˆå¤ªé˜³ï¼‰ç»•ç€ï¼ˆ0.0ï¼Œ0.0ï¼Œ0.0ï¼‰->ï¼ˆ0.0ï¼Œ1.0ï¼Œ0.0ï¼‰å‘é‡æ—‹è½¬ï¼Œæ­¤ä¾‹ä¸­å³ç»•ç€Yè½´æ—‹è½¬ï¼Œä½†åˆå§‹æ—‹è½¬è§’åº¦(GLfloat)yearä¸º0ï¼Œç»˜åˆ¶ä½ç½®æœªæ”¹å˜
+	glTranslatef(2.0, 0.0, 0.0);				//ç»˜å›¾ä½ç½®å‘Xè½´æ­£æ–¹å‘ç§»ä¸¤ä¸ªé•¿åº¦ï¼ŒXè½´æ­£æ–¹å‘æ˜¯å±å¹•çš„å³æ–¹ï¼ŒYè½´çš„æ­£æ–¹å‘æ˜¯å±å¹•çš„ä¸Šæ–¹ï¼Œæ­¤æ—¶ç»˜åˆ¶ä½ç½®æ”¹å˜
+	glRotatef((GLfloat)day, 0.0, 1.0, 0.0);		//è§£é‡ŠåŒä¸Š
+	glutWireSphere(0.2, 10, 8);					//ç”»ä¸€ä¸ªå°è¡Œæ˜Ÿï¼Œå‚æ•°åŒä¸Šï¼ŒçŠ¶æ€æœºä¸­å½“å‰ç‰©ä½“ä¸ºå°è¡Œæ˜Ÿ
+
+
+	glTranslatef(2.0, 0.0, 0.0);				//è¿™å‡ è¡Œæ˜¯æˆ‘æ–°å¢çš„ï¼Œç”¨æ¥è¯•éªŒæ—‹è½¬
+	glRotatef((GLfloat)day, 0.0, 1.0, 0.0);		//å¦‚æœè¿™ä¸ªåŠ ä¸€è¡Œï¼Œé‚£ä¹ˆdayæ”¹å˜ï¼Œæ–°å¢çƒä½“å…¬è½¬çš„åŒæ—¶è¿˜ä¼šè‡ªè½¬ï¼Œåªæ˜¯è‚‰çœ¼éš¾çœ‹å‡ºæœ‰è‡ªè½¬
 	glutWireSphere(0.2, 10, 8);
 
 
-	glPopMatrix();								//»Øµ½¼Ç×¡µÄÎ»ÖÃ£¨¼´×ø±êÔ­µã£©
 
-	//glutWireTeapot(0.6f);						//Õâ¸ö´úÂëÖ±½Ó¸øÎÒÉú³ÉÁËÒ»¸ö²èºø
+
+	glPopMatrix();								//å›åˆ°è®°ä½çš„ä½ç½®ï¼ˆå³åæ ‡åŸç‚¹ï¼‰
+
 	glDepthFunc(GL_ALWAYS);
 	glutSwapBuffers();
 }
 
 
+Matrix4 setFrustum(float l, float r, float b, float t, float n, float f)
+{
+	Matrix4 mat;
+	mat[0] = 2 * n / (r - l);
+	mat[5] = 2 * n / (t - b);
+	mat[8] = (r + l) / (r - l);
+	mat[9] = (t + b) / (t - b);
+	mat[10] = -(f + n) / (f - n);
+	mat[11] = -1;
+	mat[14] = -(2 * f * n) / (f - n);
+	mat[15] = 0;
+	return mat;
+}
+
+
+Matrix4 setFrustum(float fovY, float aspectRatio, float front, float back)
+{
+	float tangent = tanf(fovY / 2 * DEG2RAD);   // tangent of half fovY
+	float height = front * tangent;           // half height of near plane
+	float width = height * aspectRatio;       // half width of near plane
+
+											  // params: left, right, bottom, top, near, far
+	return setFrustum(-width, width, -height, height, front, back);
+}
+
+
 void reshape(int w, int h)
 {
-	//glViewport(0, 0, (GLsizei)w, (GLsizei)h);					//Ö¸¶¨ÊÓ¿Ú£¬Ç°Á½¸ö²ÎÊıÊÇÊÓ¿Ú×óÏÂ£¡½ÇµÄ×ø±ê£¬ºóÃæÁ½¸öÖ¸ÊÓ¿ÚµÄ¿í¶ÈºÍ¸ß¶È£¬Ğ´ÔÚreshape()ÄÚ£¬Ëæ×Å´°¿Ú´óĞ¡¸Ä±ä£¬ÊÓ¿Ú²ÅÄÜ¶ÔÓ¦µÄ¸Ä±ä£¬ÎïÌå´óĞ¡Ïà¶Ô¸Ä±ä
-	//															//Èô²»Ğ´´ËĞĞ£¬ÊÓ¿ÚÄ¬ÈÏÊÇ×óÏÂ½Ç£¨0£¬0£©ºÍ×î³õÉèÖÃµÄ´°¿Ú´óĞ¡µÄ¿í¸ß£¬ÕâÑùµÄ»°´°¿Ú´óĞ¡¸Ä±ä£¬ÀïÃæµÄÎïÌå²»»á±ä£¬¿ÉÒÔÒıµôµ÷ÊÔ¿´¿´
+	//è¿™æ˜¯ä¹¦ä¸Šçš„ç‰ˆæœ¬
+	//glViewport(0, 0, (GLsizei)w, (GLsizei)h);					//æŒ‡å®šè§†å£ï¼Œå‰ä¸¤ä¸ªå‚æ•°æ˜¯è§†å£å·¦ä¸‹ï¼è§’çš„åæ ‡ï¼Œåé¢ä¸¤ä¸ªæŒ‡è§†å£çš„å®½åº¦å’Œé«˜åº¦ï¼Œå†™åœ¨reshape()å†…ï¼Œéšç€çª—å£å¤§å°æ”¹å˜ï¼Œè§†å£æ‰èƒ½å¯¹åº”çš„æ”¹å˜ï¼Œç‰©ä½“å¤§å°ç›¸å¯¹æ”¹å˜
+	//															//è‹¥ä¸å†™æ­¤è¡Œï¼Œè§†å£é»˜è®¤æ˜¯å·¦ä¸‹è§’ï¼ˆ0ï¼Œ0ï¼‰å’Œæœ€åˆè®¾ç½®çš„çª—å£å¤§å°çš„å®½é«˜ï¼Œè¿™æ ·çš„è¯çª—å£å¤§å°æ”¹å˜ï¼Œé‡Œé¢çš„ç‰©ä½“ä¸ä¼šå˜ï¼Œå¯ä»¥å¼•æ‰è°ƒè¯•çœ‹çœ‹
 
-	////ĞŞ¸ÄÊÓ¾°ÌåµÄ²½Öè
-	//glMatrixMode(GL_PROJECTION);								//Ö¸¶¨µ±Ç°ĞŞ¸ÄµÄ¾ØÕóÀàĞÍÎªÍ¶Ó°¾ØÕó£¬GL_MODELVIEW±íÊ¾ÊÓµã¾ØÕó£¬GL_PROJECTION±íÊ¾Í¶Ó°¾ØÕó£¬GL_TEXTURE±íÊ¾ÎÆÀí¾ØÕó
-	//glLoadIdentity();											//½«µ±Ç°¾ØÕóÇå¿Õ£¬¼´ÉèÖÃÎª4x4µÄµ¥Î»¾ØÕó
-	//gluPerspective(60.0, (GLfloat)w / (GLfloat)h, 1.0, 20.0);	//ÉèÖÃÊÓ¾°Ìå£¬´Ëº¯ÊıÎªÍ¸ÊÓÍ¶Ó°£¬²ÎÊıÒÀ´ÎÎªY·½ÏòµÄÊÓÒ°½Ç£¬¿í¸ß±È£¬½ü²Ã¼ôÃæºÍÔ¶²Ã¼ôÃæ£¬ÏêÏ¸¼ûÊé3.3.1
+	////ä¿®æ”¹è§†æ™¯ä½“çš„æ­¥éª¤
+	//glMatrixMode(GL_PROJECTION);								//æŒ‡å®šå½“å‰ä¿®æ”¹çš„çŸ©é˜µç±»å‹ä¸ºæŠ•å½±çŸ©é˜µï¼ŒGL_MODELVIEWè¡¨ç¤ºè§†ç‚¹çŸ©é˜µï¼ŒGL_PROJECTIONè¡¨ç¤ºæŠ•å½±çŸ©é˜µï¼ŒGL_TEXTUREè¡¨ç¤ºçº¹ç†çŸ©é˜µ
+	//glLoadIdentity();											//å°†å½“å‰çŸ©é˜µæ¸…ç©ºï¼Œå³è®¾ç½®ä¸º4x4çš„å•ä½çŸ©é˜µ
+	//gluPerspective(60.0, (GLfloat)w / (GLfloat)h, 1.0, 20.0);	//è®¾ç½®è§†æ™¯ä½“ï¼Œæ­¤å‡½æ•°ä¸ºé€è§†æŠ•å½±ï¼Œå‚æ•°ä¾æ¬¡ä¸ºYæ–¹å‘çš„è§†é‡è§’ï¼Œå®½é«˜æ¯”ï¼Œè¿‘è£å‰ªé¢å’Œè¿œè£å‰ªé¢ï¼Œè¯¦ç»†è§ä¹¦3.3.1
 
-	////ĞŞ¸ÄÊÓµãµÄ²½Öè
-	//glMatrixMode(GL_MODELVIEW);									//Í¬ÉÏ
+	////ä¿®æ”¹è§†ç‚¹çš„æ­¥éª¤
+	//glMatrixMode(GL_MODELVIEW);									//åŒä¸Š
 	//glLoadIdentity();
-	//gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);		//ÉèÖÃÊÓµã£¬Ç°Èı¸ö²ÎÊıÊÇÊÓµãµÄ×ø±ê£¬ÖĞ¼äÈı¸öÊÇ³¯Ïò£¬ºóÃæÈı¸öÊÇÏòÉÏ·½Ïò£¨¿ÉÒÔÀí½âÎª¹Û²âÎïÌåµÄÏòÉÏ·½Ïò£¬Ö»ÓĞµÚ¶ş¸ö²ÎÊı³¯ÏòµÄ»°ÎïÌåµ¹×ÅÒ²¿ÉÒÔ£©
+	//gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);		//è®¾ç½®è§†ç‚¹ï¼Œå‰ä¸‰ä¸ªå‚æ•°æ˜¯è§†ç‚¹çš„åæ ‡ï¼Œä¸­é—´ä¸‰ä¸ªæ˜¯æœå‘ï¼Œåé¢ä¸‰ä¸ªæ˜¯å‘ä¸Šæ–¹å‘ï¼ˆå¯ä»¥ç†è§£ä¸ºè§‚æµ‹ç‰©ä½“çš„å‘ä¸Šæ–¹å‘ï¼Œåªæœ‰ç¬¬äºŒä¸ªå‚æ•°æœå‘çš„è¯ç‰©ä½“å€’ç€ä¹Ÿå¯ä»¥ï¼‰
 
+
+
+
+
+	//è¿™ä¸ªç‰ˆæœ¬æ”¹å˜çª—å£å¤§å°å‡ºbug
+	//glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+	//glMatrixMode(GL_PROJECTION);
+	//gluPerspective(80.0f, (float)(w) / h, 0.5f, 10.0f);				// FOV, AspectRatio, NearClip, FarClip
+
+	//// switch to modelview matrix in order to set scene
+	//glMatrixMode(GL_MODELVIEW);
+	//matrixView.identity();
+	//matrixView.translate(0, 0, -cameraDistance);
+	//glLoadMatrixf(matrixView.get());
+
+
+
+
+
+
+
+	// set viewport to be the entire window
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 
+	// set perspective viewing frustum
 	glMatrixMode(GL_PROJECTION);
-	gluPerspective(80.0f, (float)(w) / h, 0.5f, 10.0f);				// FOV, AspectRatio, NearClip, FarClip
+	glLoadIdentity();
+	matrixProjection = setFrustum(45.0f, (float)w / h, 1.0f, 100.0f);
+	glLoadMatrixf(matrixProjection.get());
 
 	// switch to modelview matrix in order to set scene
 	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 	matrixView.identity();
+
 	matrixView.translate(0, 0, -cameraDistance);
 	glLoadMatrixf(matrixView.get());
 }
 
 
-void keyboard(unsigned char key, int x, int y)	//µÚÒ»¸ö²ÎÊıÊÇ¼üÂë£¬ºóÃæÁ½¸ö²ÎÊıÊÇÊó±êµÄÎ»ÖÃ
+void keyboard(unsigned char key, int x, int y)	//ç¬¬ä¸€ä¸ªå‚æ•°æ˜¯é”®ç ï¼Œåé¢ä¸¤ä¸ªå‚æ•°æ˜¯é¼ æ ‡çš„ä½ç½®
 {
 	switch (key) {
-	case 'd':
-		day = (day + 10) % 360;			//dayµÄÖµĞŞ¸Ä£¬display(void)ÖĞ×ßµ½glRotatef((GLfloat)day, 0.0, 1.0, 0.0)Ê±£¬µ±Ç°Î»ÖÃÊÇ(2£¬0£¬0)£¬µ±Ç°ÎïÌåÊÇĞ¡ĞĞĞÇ£¨Õâ¸ö²»¶®£¡£¿£©
-										//µ±Ç°ÎïÌåÈÆ×Å¡®µ±Ç°Î»ÖÃ->(0.0, 1.0, 0.0)¡¯Õâ¸öÖáĞı×ª£¬´ËÊ±ÊÇ×Ô×ª£¡Ã»Ã«²¡
-		glutPostRedisplay();			//´°¿ÚÄÚÈİĞŞ¸ÄÁË£¬ÓĞËü²ÅÄÜ¸üĞÂ
+	case 't':
+		day = (day + 10) % 360;			//dayçš„å€¼ä¿®æ”¹ï¼Œdisplay(void)ä¸­èµ°åˆ°glRotatef((GLfloat)day, 0.0, 1.0, 0.0)æ—¶ï¼Œå½“å‰ä½ç½®æ˜¯(2ï¼Œ0ï¼Œ0)ï¼Œå½“å‰ç‰©ä½“æ˜¯å°è¡Œæ˜Ÿï¼ˆè¿™ä¸ªä¸æ‡‚ï¼ï¼Ÿï¼‰
+										//å½“å‰ç‰©ä½“ç»•ç€â€˜å½“å‰ä½ç½®->(0.0, 1.0, 0.0)â€™è¿™ä¸ªè½´æ—‹è½¬ï¼Œæ­¤æ—¶æ˜¯è‡ªè½¬ï¼æ²¡æ¯›ç—…
+		glutPostRedisplay();			//çª—å£å†…å®¹ä¿®æ”¹äº†ï¼Œæœ‰å®ƒæ‰èƒ½æ›´æ–°
 		break;
-	case 'D':							//´óĞ´µÄ×ÖÄ¸ÈİÒ×±»ĞÂÊÖºöÂÔ
+	case 'T':							//å¤§å†™çš„å­—æ¯å®¹æ˜“è¢«æ–°æ‰‹å¿½ç•¥
 		day = (day - 10) % 360;
 		glutPostRedisplay();
 		break;
 	case 'y':
-		year = (year + 5) % 360;		//yearµÄÖµĞŞ¸Ä£¬display(void)ÖĞ×ßµ½glRotatef((GLfloat)year, 0.0, 1.0, 0.0)Ê±£¬µ±Ç°Î»ÖÃÊÇ(0£¬0£¬0)£¬µ±Ç°ÎïÌåÊÇĞ¡ĞĞĞÇ£¨Õâ¸ö»¹ÊÇ²»¶®£¡£¿£©
-										//µ±Ç°ÎïÌåÈÆ×Å¡®µ±Ç°Î»ÖÃ->(0.0, 1.0, 0.0)¡¯Õâ¸öÖáĞı×ª£¬´ËÊ±ÊÇ¹«×ª£¡Ã»Ã«²¡
+		year = (year + 5) % 360;		//yearçš„å€¼ä¿®æ”¹ï¼Œdisplay(void)ä¸­èµ°åˆ°glRotatef((GLfloat)year, 0.0, 1.0, 0.0)æ—¶ï¼Œå½“å‰ä½ç½®æ˜¯(0ï¼Œ0ï¼Œ0)ï¼Œå½“å‰ç‰©ä½“æ˜¯å°è¡Œæ˜Ÿï¼ˆè¿™ä¸ªè¿˜æ˜¯ä¸æ‡‚ï¼ï¼Ÿï¼‰
+										//å½“å‰ç‰©ä½“ç»•ç€â€˜å½“å‰ä½ç½®->(0.0, 1.0, 0.0)â€™è¿™ä¸ªè½´æ—‹è½¬ï¼Œæ­¤æ—¶æ˜¯å…¬è½¬ï¼æ²¡æ¯›ç—…
 		glutPostRedisplay();
 		break;
 	case 'Y':
 		year = (year - 5) % 360;
 		glutPostRedisplay();
 		break;
-	case '=':
+	case 'w':
 		matrixView.translate(0, 0, cameraDistance);
-		cameraDistance *= 0.9f;
+		cameraDistance -= 0.05f;
 		matrixView.translate(0, 0, -cameraDistance);
 		break;
-	case '-':
+	case 's':
 		matrixView.translate(0, 0, cameraDistance);
-		cameraDistance *= 1.1f;
+		cameraDistance += 0.05f;
 		matrixView.translate(0, 0, -cameraDistance);
 		break;
-	case 27:              //°´EscÍË³ö
+	case 'a':
+		matrixView.translate(cameraDistance, 0, 0);
+		cameraDistance -= 0.05f;
+		matrixView.translate(-cameraDistance, 0, 0);
+		break;
+	case 'd':
+		matrixView.translate(cameraDistance, 0, 0);
+		cameraDistance += 0.05f;
+		matrixView.translate(-cameraDistance, 0, 0);
+		break;
+	case 27:              //æŒ‰Escé€€å‡º
 	    exit(0);
 	    break;
 	default:
@@ -131,13 +256,13 @@ void mousePress(int button, int state, int x, int y)
 	mouseX = x;
 	mouseY = y;
 
-	if (button == GLUT_LEFT_BUTTON)			//×ó¼ü
+	if (button == GLUT_LEFT_BUTTON)			//å·¦é”®
 	{
-		if (state == GLUT_DOWN)				//×ó¼ü°´ÏÂÊ±
+		if (state == GLUT_DOWN)				//å·¦é”®æŒ‰ä¸‹æ—¶
 		{
-			mouseLeftDown = true;			//¸Ä±ä×´Ì¬Öµ
+			mouseLeftDown = true;			//æ”¹å˜çŠ¶æ€å€¼
 		}
-		else if (state == GLUT_UP)			//×ó¼üËÉ¿ªÊ±
+		else if (state == GLUT_UP)			//å·¦é”®æ¾å¼€æ—¶
 			mouseLeftDown = false;
 	}
 	else if (button == GLUT_RIGHT_BUTTON)
@@ -154,14 +279,14 @@ void mousePress(int button, int state, int x, int y)
 
 void mouseMotion(int x, int y)
 {
-	if (mouseLeftDown)								//Êó±ê×ó¼üµÄ×÷ÓÃÊÇÈÆÄ³µãÑ¡Ôñ
+	if (mouseLeftDown)								//é¼ æ ‡å·¦é”®çš„ä½œç”¨æ˜¯ç»•æŸç‚¹é€‰æ‹©
 	{
 		cameraAngleY = (x - mouseX);
 		cameraAngleX = (y - mouseY);
 		mouseX = x;
 		mouseY = y;
 	}
-	if (mouseRightDown)								//Êó±êÓÒ¼üµÄ×÷ÓÃÊÇÊÓµãÒÆ¶¯£¬×÷ÓÃºÍ¡®=¡¯¡®-¡¯Ò»Ñù
+	if (mouseRightDown)								//é¼ æ ‡å³é”®çš„ä½œç”¨æ˜¯è§†ç‚¹ç§»åŠ¨ï¼ŒæŒ‰ä½å³é”®åä¸Šä¸‹ç§»åŠ¨æ‰æœ‰æ•ˆï¼Œå› ä¸ºç”¨äº†y - mouseYï¼ŒæŒ‰é”®ä¹Ÿæœ‰è¿™æ ·çš„æ•ˆæœ
 	{
 		matrixView.translate(0, 0, cameraDistance);
 		cameraDistance += (y - mouseY) * 0.01f;
@@ -171,7 +296,7 @@ void mouseMotion(int x, int y)
 }
 
 
-//Èç¹ûÃ»ÓĞÕâ¸öº¯Êı¾Í·Ç³£¿¨£¬º¯Êı×÷ÓÃÊÇÖ»¶ÔÃ¿¸ö¸ø¶¨µÄºÁÃëÖØ»æ
+//å¦‚æœæ²¡æœ‰è¿™ä¸ªå‡½æ•°å°±éå¸¸å¡ï¼Œå‡½æ•°ä½œç”¨æ˜¯åªå¯¹æ¯ä¸ªç»™å®šçš„æ¯«ç§’é‡ç»˜
 void timer(int millisec)
 {
 	glutTimerFunc(millisec, timer, millisec);
@@ -181,27 +306,27 @@ void timer(int millisec)
 
 int main(int argc, char** argv)
 {
-	//³õÊ¼»¯È«¾Ö±äÁ¿
+	//åˆå§‹åŒ–å…¨å±€å˜é‡
 	mouseLeftDown = mouseRightDown = false;
 	mouseX = mouseY = 0;
 	cameraAngleX = cameraAngleY = 0;
 	cameraDistance = CAMERA_DISTANCE;
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);	//Ë«»º´æ£¬µ÷ÓÃglutSwapBuffers()È¥½»»»»º´æ£¬ÒòÎªËùÓĞµÄ»æÖÆ¶¼ÔÚºóÌ¨»º´æ£¬²»½»»»¾Í¿´²»µ½¶«Î÷
-	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	//µ¥»º´æ£¬µ÷ÓÃglFlush()È¥Ç¿ÖÆÖ´ĞĞ£¬ÒòÎª»º´æÂúÁË²Å»áÖ´ĞĞÃüÁî£¬¶øÃ»ÓĞÖ´ĞĞÇ°ÃæµÄ»æÖÆ¾ÍÒ²¿´²»µ½¶«Î÷
-	glutInitWindowSize(cx, cy);					//ĞÂ½¨Á¢µÄ´°¿ÚµÄ´óĞ¡
-	glutInitWindowPosition(0, 0);				//´°¿ÚÀëÆÁÄ»×óÉÏ!½ÇµÄÎ»ÖÃ
-	glutCreateWindow(argv[0]);
-	init();											//´°¿ÚÄÚÈİ³õÊ¼»¯
-	glutDisplayFunc(display);						//ÓÃÓÚÏÔÊ¾Í¼ĞÎµÄ»Øµ÷º¯Êı
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);	//åŒç¼“å­˜ï¼Œè°ƒç”¨glutSwapBuffers()å»äº¤æ¢ç¼“å­˜ï¼Œå› ä¸ºæ‰€æœ‰çš„ç»˜åˆ¶éƒ½åœ¨åå°ç¼“å­˜ï¼Œä¸äº¤æ¢å°±çœ‹ä¸åˆ°ä¸œè¥¿
+	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	//å•ç¼“å­˜ï¼Œè°ƒç”¨glFlush()å»å¼ºåˆ¶æ‰§è¡Œï¼Œå› ä¸ºç¼“å­˜æ»¡äº†æ‰ä¼šæ‰§è¡Œå‘½ä»¤ï¼Œè€Œæ²¡æœ‰æ‰§è¡Œå‰é¢çš„ç»˜åˆ¶å°±ä¹Ÿçœ‹ä¸åˆ°ä¸œè¥¿
+	glutInitWindowSize(cx, cy);					//æ–°å»ºç«‹çš„çª—å£çš„å¤§å°
+	glutInitWindowPosition(0, 0);				//çª—å£ç¦»å±å¹•å·¦ä¸Š!è§’çš„ä½ç½®
+	int handle = glutCreateWindow(argv[0]);
+	init();											//çª—å£å†…å®¹åˆå§‹åŒ–
+	glutDisplayFunc(display);						//ç”¨äºæ˜¾ç¤ºå›¾å½¢çš„å›è°ƒå‡½æ•°
 
 	glutTimerFunc(33, timer, 33);
 
-	glutReshapeFunc(reshape);						//´°¿Ú´óĞ¡·¢Éú¸Ä±äÊ±µ÷ÓÃµÄº¯Êı
-	glutKeyboardFunc(keyboard);						//ÏìÓ¦ÌØ¶¨°´¼üµÄº¯Êı
+	glutReshapeFunc(reshape);						//çª—å£å¤§å°å‘ç”Ÿæ”¹å˜æ—¶è°ƒç”¨çš„å‡½æ•°
+	glutKeyboardFunc(keyboard);						//å“åº”ç‰¹å®šæŒ‰é”®çš„å‡½æ•°
 	glutMouseFunc(mousePress);
 	glutMotionFunc(mouseMotion);
-	glutMainLoop();									//Ö÷º¯ÊıÑ­»·£¬ÕâÑù´°¿Ú²Å²»»áÖ±½Ó¾ÍÍË³ö
-	return 0;
+	glutMainLoop();									//ä¸»å‡½æ•°å¾ªç¯ï¼Œè¿™æ ·çª—å£æ‰ä¸ä¼šç›´æ¥å°±é€€å‡º
+	return handle;
 }
