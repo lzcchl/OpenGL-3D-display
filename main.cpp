@@ -9,7 +9,7 @@
 #define PI 3.1415926535898
 
 bool mouseLeftDown, mouseRightDown, mouseMiddleDown;
-float mouseX, mouseY;
+int mouseX, mouseY;
 float cameraAngleX, cameraAngleY;
 const float CAMERA_DISTANCE = 5.0f;
 float cameraDistance;
@@ -22,11 +22,57 @@ const float DEG2RAD = 3.141593f / 180;
 int  cx = GetSystemMetrics(SM_CXFULLSCREEN);	//这两行获得屏幕大小，用来设置窗口
 int  cy = GetSystemMetrics(SM_CYFULLSCREEN);
 static int year = 0, day = 0;						//静态全局变量，只在此文件内可用
+const float wsSpead = 0.3f;							//前后两个按键的速度
+const float adSpead = 0.1f;							//左右两个按键的速度
 
 void init(void)
 {
-	glClearColor(0.0, 0.0, 0.0, 0.0);			//清除颜色为黑色
-	glShadeModel(GL_FLAT);						//着色模式，一般分为两种，GL_FLAT为单调着色，即图形的颜色为内部第一（或最后一）个顶点的颜色，GL_SMOOTH为渐变着色，顾名思义就不说了
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glShadeModel(GL_SMOOTH);                            //启用阴影平滑
+	glClearDepth(1.0);                                  //设置深度缓存//着色模式，一般分为两种，GL_FLAT为单调着色，即图形的颜色为内部第一（或最后一）个顶点的颜色，GL_SMOOTH为渐变着色，顾名思义就不说了
+	glEnable(GL_DEPTH_TEST);                            //启用深度测试
+	glDepthFunc(GL_LEQUAL);                             //所作深度测试的类型
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  //告诉系统对透视进行修正		
+}
+
+
+
+void drawGrid(float size, float step)
+{
+	// disable lighting
+	glDisable(GL_LIGHTING);
+
+	// 20x20 grid
+	glBegin(GL_LINES);
+
+	glColor3f(0.5f, 0.5f, 0.5f);
+	for (float i = step; i <= size; i += step)
+	{
+		glVertex3f(-size, 0, i);   // lines parallel to X-axis
+		glVertex3f(size, 0, i);
+		glVertex3f(-size, 0, -i);   // lines parallel to X-axis
+		glVertex3f(size, 0, -i);
+
+		glVertex3f(i, 0, -size);   // lines parallel to Z-axis
+		glVertex3f(i, 0, size);
+		glVertex3f(-i, 0, -size);   // lines parallel to Z-axis
+		glVertex3f(-i, 0, size);
+	}
+
+	// x-axis
+	glColor3f(1, 0, 0);
+	glVertex3f(-size, 0, 0);
+	glVertex3f(size, 0, 0);
+
+	// z-axis
+	glColor3f(0, 0, 1);
+	glVertex3f(0, 0, -size);
+	glVertex3f(0, 0, size);
+
+	glEnd();
+
+	// enable lighting back
+	glEnable(GL_LIGHTING);
 }
 
 
@@ -72,23 +118,102 @@ void drawOneFloor(int n)						//用类似插值的效果画一层
 
 void display(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	matrixView.translate(0, 0, cameraDistance);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	//drawGrid(15.0f,2.0f);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//改进第三步，引掉下面两行，使得视点在主人公身上而不是在物体上
+	//matrixView.translate(0, 0, cameraDistance);
 	matrixView.rotate(cameraAngleX, 1, 0, 0);     //cameraAngleX
 	matrixView.rotate(cameraAngleY, 0, 1, 0);     //cameraAngleY
-	matrixView.translate(0, 0, -cameraDistance);
+	//matrixView.translate(0, 0, -cameraDistance);
 	cameraAngleX = 0;
     cameraAngleY = 0;
     glLoadMatrixf(matrixView.get());
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+	
 
 	//模拟多层的神经元
 	glPushMatrix();
-	for (int i = 12; i < 32; ++i)
-	{
-		drawOneFloor(12);
-		//drawOneFloor(i);
-	}
+	glBegin(GL_TRIANGLES);                              //开始绘制金字塔
+	glColor3f(1.0f, 0.0f, 0.0f);                    //红色
+	glVertex3f(0.0f, 1.0f, 0.0f);                   //上顶点(前侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);                    //绿色
+	glVertex3f(-1.0f, -1.0f, 1.0f);                 //左下(前侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);                    //蓝色
+	glVertex3f(1.0f, -1.0f, 1.0f);                  //右下(前侧面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);                    //红色
+	glVertex3f(0.0f, 1.0f, 0.0f);                   //上顶点(右侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);                    //蓝色
+	glVertex3f(1.0f, -1.0f, 1.0f);                  //左下(右侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);                    //绿色
+	glVertex3f(1.0f, -1.0f, -1.0f);                 //右下(右侧面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);                    //红色
+	glVertex3f(0.0f, 1.0f, 0.0f);                   //上顶点(后侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);                    //绿色
+	glVertex3f(1.0f, -1.0f, -1.0f);                 //左下(后侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);                    //蓝色
+	glVertex3f(-1.0f, -1.0f, -1.0f);                //右下(后侧面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);                    //红色
+	glVertex3f(0.0f, 1.0f, 0.0f);                   //上顶点(左侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);                    //蓝色
+	glVertex3f(-1.0f, -1.0f, -1.0f);                //左下(左侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);                    //绿色
+	glVertex3f(-1.0f, -1.0f, 1.0f);                 //右下(左侧面)
+	glEnd();                                            //金字塔绘制结束
+
+
+	glTranslatef(1.5f, 0.0f, -6.0f);                    //右移1.5单位，并移入屏幕6.0单位
+
+	glBegin(GL_QUADS);                                  //开始绘制立方体
+	glColor3f(0.0f, 1.0f, 0.0f);                    //绿色
+	glVertex3f(1.0f, 1.0f, -1.0f);                  //右上(顶面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);                 //左上(顶面)
+	glVertex3f(-1.0f, 1.0f, 1.0f);                  //左下(顶面)
+	glVertex3f(1.0f, 1.0f, 1.0f);                   //右下(顶面)
+
+	glColor3f(1.0f, 0.5f, 0.0f);                    //橙色
+	glVertex3f(1.0f, -1.0f, 1.0f);                  //右上(底面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);                 //左上(底面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);                //左下(底面)
+	glVertex3f(1.0f, -1.0f, -1.0f);                 //右下(底面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);                    //红色
+	glVertex3f(1.0f, 1.0f, 1.0f);                   //右上(前面)
+	glVertex3f(-1.0f, 1.0f, 1.0f);                  //左上(前面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);                 //左下(前面)
+	glVertex3f(1.0f, -1.0f, 1.0f);                  //右下(前面)
+
+	glColor3f(1.0f, 1.0f, 0.0f);                    //黄色
+	glVertex3f(1.0f, -1.0f, -1.0f);                 //右上(后面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);                //左上(后面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);                 //左下(后面)
+	glVertex3f(1.0f, 1.0f, -1.0f);                  //右下(后面)
+
+	glColor3f(0.0f, 0.0f, 1.0f);                    //蓝色
+	glVertex3f(-1.0f, 1.0f, 1.0f);                  //右上(左面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);                 //左上(左面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);                //左下(左面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);                 //右下(左面)
+
+	glColor3f(1.0f, 0.0f, 1.0f);                    //紫色
+	glVertex3f(1.0f, 1.0f, -1.0f);                  //右上(右面)
+	glVertex3f(1.0f, 1.0f, 1.0f);                   //左上(右面)
+	glVertex3f(1.0f, -1.0f, 1.0f);                  //左下(右面)
+	glVertex3f(1.0f, -1.0f, -1.0f);                 //右下(右面)
+	glEnd();
+	//for (int i = 12; i < 62; ++i)
+	//{
+
+	//	//drawOneFloor(50);
+	//	////drawOneFloor(i);
+	//}
 	glPopMatrix();
 
 
@@ -107,14 +232,26 @@ void display(void)
 	glTranslatef(2.0, 0.0, 0.0);				//这几行是我新增的，用来试验旋转
 	glRotatef((GLfloat)day, 0.0, 1.0, 0.0);		//如果这个加一行，那么day改变，新增球体公转的同时还会自转，只是肉眼难看出有自转
 	glutWireSphere(0.2, 10, 8);
-
+	glTranslatef(2.0, 2.0, 0.0);
+	glutWireSphere(0.2, 10, 8);
+	glTranslatef(2.0, 2.0, 2.0);
+	glutWireSphere(0.2, 20, 8);
+	glTranslatef(2.0, -2.0, 0.0);
+	glutWireSphere(0.2, 10, 8);
+	glTranslatef(2.0, 2.0, -2.0);
+	glutWireSphere(0.2, 10, 10);
 
 
 
 	glPopMatrix();								//回到记住的位置（即坐标原点）
 
-	glDepthFunc(GL_ALWAYS);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//和下面reshape函数中一并属于改进第一步，在这里加glLoadMatrixf，窗口大小改动时候不会重置，而后引掉glDepthFunc，否则透视了
+	//glDepthFunc(GL_ALWAYS);
 	glutSwapBuffers();
+	glLoadMatrixf(matrixView.get());
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -182,22 +319,28 @@ void reshape(int w, int h)
 
 
 
-	// set viewport to be the entire window
-	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 
-	// set perspective viewing frustum
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	matrixProjection = setFrustum(45.0f, (float)w / h, 1.0f, 100.0f);
-	glLoadMatrixf(matrixProjection.get());
 
-	// switch to modelview matrix in order to set scene
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//属于改进的第二步，这样的话，左右移动后，物体绕点旋转的点也随之移动，之前旋转点都不会动
+	//matrixView.identity();
+	//matrixProjection = setFrustum(45.0f, (float)w / h, 1.0f, 100.0f);
+	//glLoadMatrixf(matrixProjection.get());
+	gluPerspective(45.0, (GLfloat)w / (GLfloat)h, 1.0f, 100.0f);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	matrixView.identity();
-
-	matrixView.translate(0, 0, -cameraDistance);
-	glLoadMatrixf(matrixView.get());
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//属于改进的第一步，glLoadMatrixf如果加在这里，窗口大小改变会重置情景
+	//matrixView.identity();
+	//matrixView.translate(0, 0, -cameraDistance);
+	//glLoadMatrixf(matrixView.get());
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -224,22 +367,22 @@ void keyboard(unsigned char key, int x, int y)	//第一个参数是键码，后�
 		break;
 	case 'w':
 		matrixView.translate(0, 0, cameraDistance);
-		cameraDistance -= 0.05f;
+		cameraDistance -= wsSpead;
 		matrixView.translate(0, 0, -cameraDistance);
 		break;
 	case 's':
 		matrixView.translate(0, 0, cameraDistance);
-		cameraDistance += 0.05f;
+		cameraDistance += wsSpead;
 		matrixView.translate(0, 0, -cameraDistance);
 		break;
 	case 'a':
 		matrixView.translate(cameraDistance, 0, 0);
-		cameraDistance -= 0.05f;
+		cameraDistance -= adSpead;
 		matrixView.translate(-cameraDistance, 0, 0);
 		break;
 	case 'd':
 		matrixView.translate(cameraDistance, 0, 0);
-		cameraDistance += 0.05f;
+		cameraDistance += adSpead;
 		matrixView.translate(-cameraDistance, 0, 0);
 		break;
 	case 27:              //按Esc退出
@@ -288,10 +431,10 @@ void mouseMotion(int x, int y)
 	}
 	if (mouseRightDown)								//鼠标右键的作用是视点移动，按住右键后上下移动才有效，因为用了y - mouseY，按键也有这样的效果
 	{
-		matrixView.translate(0, 0, cameraDistance);
-		cameraDistance += (y - mouseY) * 0.01f;
-		mouseY = y;
-		matrixView.translate(0, 0, -cameraDistance);
+		//matrixView.translate(0, 0, cameraDistance);
+		//cameraDistance += (y - mouseY) * 0.01f;
+		//mouseY = y;
+		//matrixView.translate(0, 0, -cameraDistance);
 	}
 }
 
